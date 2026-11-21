@@ -1,13 +1,25 @@
-for (const figure of document.querySelectorAll('.schematic')) {
-  const button = figure.querySelector('button');
-  const status = figure.querySelector('[aria-live]');
-  const fork = figure.classList.contains('fork');
-  button.addEventListener('click', () => {
-    const alternate = fork && figure.classList.toggle('alternate');
-    figure.classList.remove('running');
-    void figure.offsetWidth;
-    figure.classList.add('running');
-    status.textContent = fork && !alternate ? figure.dataset.initial : figure.dataset.result;
-    if (fork) button.textContent = alternate ? figure.dataset.reset : figure.dataset.start;
-  });
+for (const lab of document.querySelectorAll('.lab')) {
+  const states = JSON.parse(lab.querySelector('.lab-states').textContent);
+  const status = lab.querySelector('[role="status"]');
+  const controls = [...lab.querySelectorAll('button[data-mode]')];
+  const checks = [...lab.querySelectorAll('[data-check]')];
+  function updateChecks() {
+    const done = checks.filter(check => check.checked).length;
+    lab.style.setProperty('--complete', (done / checks.length * 100) + '%');
+    status.textContent = done ? done + ' / ' + checks.length + ' contrôles parcourus.' : states[0];
+  }
+  for (const check of checks) check.addEventListener('change', updateChecks);
+  for (const button of controls) {
+    if (checks.length) button.removeAttribute('aria-pressed');
+    button.addEventListener('click', () => {
+      if (checks.length) {
+        for (const check of checks) check.checked = false;
+        updateChecks();
+        return;
+      }
+      lab.dataset.mode = button.dataset.mode;
+      for (const item of controls) item.setAttribute('aria-pressed', String(item === button));
+      status.textContent = states[Number(button.dataset.mode)];
+    });
+  }
 }
